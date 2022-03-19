@@ -1,0 +1,48 @@
+version: '3.8'
+services:
+  mysqldb:
+    image: mysql:5.7
+    restart: unless-stopped
+    env_file: ./.env
+    environment:
+      - MYSQL_ROOT_PASSWORD=$DB_PASSWORD
+      - MYSQL_DATABASE=$DB_NAME
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - $DB_PORT:$DB_PORT
+    volumes:
+      - db:/var/lib/mysql
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: pma
+    links:
+      - mysqldb
+    environment:
+      PMA_HOST: mysqldb
+      PMA_PORT: $DB_PORT
+      PMA_ARBITRARY: 1
+    restart: always
+    ports:
+      - 8081:80
+  app:
+    depends_on:
+      - mysqldb
+    build: .
+    restart: unless-stopped
+    env_file: ./.env
+    volumes:
+      - .:/app/
+      - modules:/app/node_modules
+    ports:
+      - $APP_PORT:$APP_PORT
+    environment:
+      - DB_HOST=mysqldb
+      - DB_USER=$DB_USER
+      - DB_PASSWORD=$DB_PASSWORD
+      - DB_NAME=$DB_NAME
+      - DB_PORT=$DB_PORT
+    stdin_open: true
+    tty: true
+volumes: 
+  db:
+  modules:
